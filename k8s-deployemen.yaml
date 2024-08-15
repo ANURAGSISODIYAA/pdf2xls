@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pdf2xls
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pdf2xls
+  template:
+    metadata:
+      labels:
+        app: pdf2xls
+    spec:
+      containers:
+        - name: spring-boot-app
+          image: anurag2121/pdf2xls:latest
+          ports:
+            - containerPort: 8080
