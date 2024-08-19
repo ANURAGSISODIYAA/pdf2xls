@@ -22,7 +22,8 @@ public class ConvertApiService {
     public Path convertPdfToExcel(Path pdfFilePath) throws Exception {
         try {
             CompletableFuture<ConversionResult> result = ConvertApi.convert("pdf", "xlsx", new Param("file", pdfFilePath));
-            Path outputExcelPath = Paths.get("output.xlsx");
+            String uniqueFileName = "output_" + UUID.randomUUID() + ".xlsx";
+            Path outputExcelPath = Paths.get(uniqueFileName);
             result.get().saveFile(outputExcelPath).get();
             return outputExcelPath;
         } catch (ConversionException e) {
@@ -32,6 +33,7 @@ public class ConvertApiService {
             System.err.println("Error: " + e.getMessage());
             throw e;
         }
+
     }
 
     public List<Map<String, String>> extractDataFromExcel(Path excelFilePath) throws IOException {

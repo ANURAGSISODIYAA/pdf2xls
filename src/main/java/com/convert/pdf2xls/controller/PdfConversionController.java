@@ -1,6 +1,12 @@
 package com.convert.pdf2xls.controller;
 
+
+import java.util.HashMap;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,21 +31,42 @@ public class PdfConversionController {
     }
 
     @PostMapping("/convert")
-    public ResponseEntity<?> convertPdfToExcel(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Resource> convertPdfToExcel(@RequestParam("file") MultipartFile file) {
         try {
-
             File tempFile = convertMultiPartToFile(file);
 
             Path excelFilePath = convertApiService.convertPdfToExcel(tempFile.toPath());
 
-            List<Map<String, String>> extractedData = convertApiService.extractDataFromExcel(excelFilePath);
+            // Ensure that the Excel file is downloadable by setting proper headers
+            FileSystemResource resource = new FileSystemResource(excelFilePath.toFile());
 
-            return new ResponseEntity<>(extractedData, HttpStatus.OK);
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + excelFilePath.getFileName());
+            headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
+
+            return new ResponseEntity<>(resource, headers, HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>("Failed to convert and extract data: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @PostMapping("/extract")
+    public ResponseEntity<Map<String, Object>> extractDataFromPdf(@RequestParam("file") MultipartFile file) {
+        try {
+            File tempFile = convertMultiPartToFile(file);
+
+            Path excelFilePath = convertApiService.convertPdfToExcel(tempFile.toPath());
+            List<Map<String, String>> extractedData = convertApiService.extractDataFromExcel(excelFilePath);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", extractedData);
+            response.put("excelFileName", excelFilePath.getFileName().toString());
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     private File convertMultiPartToFile(MultipartFile file) throws IOException {
         File convFile = new File(file.getOriginalFilename());
@@ -49,3 +76,4 @@ public class PdfConversionController {
         return convFile;
     }
 }
+
